@@ -32,7 +32,7 @@
             @csrf
             <header class="top-nav">
                 <div class="top-nav-title"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M19 12H5"></path><path d="m12 19-7-7 7-7"></path></svg><span>Редактирование синтеза</span></div>
-                <button type="submit" class="btn-save">Опубликовать</button>
+                <button type="submit" class="button button-primary">Опубликовать</button>
             </header>
             <div class="form-stack">
                 <div class="form-group">

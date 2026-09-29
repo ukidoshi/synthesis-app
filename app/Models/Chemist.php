@@ -9,5 +9,9 @@ class Chemist extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['full_name', 'email'];
+    protected $hidden = [
+        'password'
+    ];
+
+    protected $fillable = ['full_name', 'email', 'password'];
 }

@@ -15,6 +15,7 @@ class ChemistFactory extends Factory
         return [
             'full_name' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
+            'password' => hash('sha256', 'test123'),
             'created_at' => Carbon::now(),
             'updated_at' => Carbon::now(),
         ];
