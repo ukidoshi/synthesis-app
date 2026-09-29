@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 560" role="img" aria-labelledby="title desc">
+  <title id="title">Реакционная колба</title><desc id="desc">Иллюстрация лабораторной колбы</desc>
+  <defs>
+    <linearGradient id="background" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#102e47"/><stop offset="1" stop-color="#07131d"/></linearGradient>
+    <linearGradient id="liquid" x1="0" x2="0" y1="0" y2="1"><stop stop-color="#11b9dc"/><stop offset="1" stop-color="#2856b4"/></linearGradient>
+    <radialGradient id="glow"><stop stop-color="#28ddf6" stop-opacity=".75"/><stop offset="1" stop-color="#28ddf6" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="360" height="560" fill="url(#background)"/><circle cx="182" cy="343" r="167" fill="url(#glow)" opacity=".36"/>
+  <path d="M137 54h86m-60 0v155L76 403c-31 69 20 111 104 111s135-42 104-111l-87-194V54" fill="none" stroke="#d4f5fa" stroke-linecap="round" stroke-linejoin="round" stroke-width="13"/>
+  <path d="M95 408c-21 48 19 76 85 76s106-28 85-76l-23-50H118l-23 50Z" fill="url(#liquid)" opacity=".82"/><path d="M116 358h126" stroke="#82edf8" stroke-width="8" opacity=".8"/>
+  <g fill="#baf8ff" opacity=".75"><circle cx="143" cy="422" r="8"/><circle cx="188" cy="452" r="5"/><circle cx="216" cy="405" r="10"/><circle cx="238" cy="442" r="6"/><circle cx="127" cy="462" r="5"/></g>
+</svg>
