@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Chemist;
 use App\Models\SynthesisStage;
 use Carbon\Carbon;
+use Database\Factories\ChemistFactory;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -18,6 +19,8 @@ class SynthesisDatabaseSeeder extends Seeder
         $now = Carbon::now();
         $chemist = Chemist::query()->firstOrCreate(['email' => 'saryglar@bmstu.ru'], ['full_name' => 'Начын Сарыглар']);
         $curie = Chemist::query()->firstOrCreate(['email' => 'curie@lab.com'], ['full_name' => 'Мария Кюри']);
+
+        Chemist::factory()->count(5)->create();
 
         $publishedOne = $this->stage($chemist, [
             'name' => 'Восстановление нитробензола',
