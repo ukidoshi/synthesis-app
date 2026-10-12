@@ -26,15 +26,18 @@
                     <span class="stage-tile-num">ЭТАП {{ str_pad($index + 1, 2, '0', STR_PAD_LEFT) }} {{ $stage->lifecycle_status == 'published' ? '' : ' | Черновик' }}</span>
                     <span class="stage-tile-title">{{ $stage->name }}</span>
                     <span class="stage-tile-details">
-                        <span class="yield-label"><span>Выход</span><span class="yield-val">{{ $stage->yield_percentage }}%</span></span>
-                        <progress class="yield-track" value="{{ $stage->yield_percentage }}" max="100">{{ $stage->yield_percentage }}%</progress>
+{{--                        <span class="yield-label"><span>Выход</span><span class="yield-val">{{ $stage->yield_percentage }}%</span></span>--}}
+{{--                        <progress class="yield-track" value="{{ $stage->yield_percentage }}" max="100">{{ $stage->yield_percentage }}%</progress>--}}
                         <span class="temp-label">Температура: {{ $stage->reaction_temperature_celsius }}°C</span>
                     </span>
                 </a>
                 @if($stage->chemist_id === $currentChemistId)
                     <form method="POST" action="/synthesis-stages/{{ $stage->id }}/delete" class="stage-delete-form">
                         @csrf
-                        <button type="submit" class="stage-delete-button">Удалить</button>
+                        <button type="submit" class="button button-primary">
+                            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18"></path><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path><path d="M10 11v6"></path><path d="M14 11v6"></path></svg>
+{{--                            <span>Удалить</span>--}}
+                        </button>
                     </form>
                 @endif
                 </article>

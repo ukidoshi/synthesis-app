@@ -41,10 +41,9 @@ return new class extends Migration
 
         // 3. Таблица лайков (многие-ко-многим)
         Schema::create('synthesis_stage_likes', function (Blueprint $table) {
+            $table->id();
             $table->foreignId('synthesis_stage_id')->constrained('synthesis_stages', 'id')->onDelete('restrict');
             $table->foreignId('chemist_id')->constrained('chemists', 'id')->onDelete('restrict');
-            $table->primary(['synthesis_stage_id', 'chemist_id']);
-            $table->timestamps();
         });
     }
 

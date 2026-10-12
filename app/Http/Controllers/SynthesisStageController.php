@@ -8,12 +8,17 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 use Log;
 
 class SynthesisStageController extends Controller
 {
     private const DEFAULT_IMAGE = '/images/default_reaction.svg';
     private const DEFAULT_VIDEO = '/videos/default_reaction.mp4';
+
+    private const MEDIA_IMAGE_RULES = ['nullable', 'file', 'image', 'max:10240'];
+    private const MEDIA_VIDEO_RULES = ['nullable', 'file', 'mimetypes:video/mp4,video/webm,video/quicktime', 'max:51200'];
 
     private function currentChemist(): Chemist
     {
@@ -24,14 +29,33 @@ class SynthesisStageController extends Controller
 
     private function withResolvedImage(SynthesisStage $stage): SynthesisStage
     {
-        $stage->resolved_image = filled($stage->media_image_url) ? $stage->media_image_url : self::DEFAULT_IMAGE;
+        $rawPath = $stage->getRawOriginal('media_image_url');
+
+        if (filled($rawPath) && Storage::disk('s3')->exists($rawPath)) {
+            $stage->resolved_image = Storage::disk('s3')->url($rawPath);
+        } else {
+            $stage->resolved_image = asset(self::DEFAULT_IMAGE);
+        }
+
         return $stage;
     }
 
     private function withResolvedVideo(SynthesisStage $stage): SynthesisStage
     {
-        $stage->resolved_video = filled($stage->media_video_url) ? $stage->media_video_url : self::DEFAULT_VIDEO;
+        $rawPath = $stage->getRawOriginal('media_video_url');
+
+        if (filled($rawPath) && Storage::disk('s3')->exists($rawPath)) {
+            $stage->resolved_video = Storage::disk('s3')->url($rawPath);
+        } else {
+            $stage->resolved_video = asset(self::DEFAULT_VIDEO);
+        }
+
         return $stage;
+    }
+
+    private function storeUploadedMedia(UploadedFile $file, string $folder): string
+    {
+        return $file->store($folder, ['disk' => 's3', 'visibility' => 'public']);
     }
 
     /** GET: tiles with server-side temperature filtering. */
@@ -97,11 +121,22 @@ class SynthesisStageController extends Controller
 
     public function storeStageDraft(Request $request)
     {
-        $data = $request->validate(['name' => ['required', 'string', 'max:150']]);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:150'],
+            'media_image' => self::MEDIA_IMAGE_RULES,
+            'media_video' => self::MEDIA_VIDEO_RULES,
+        ]);
         $chemist = $this->currentChemist();
         $draft = SynthesisStage::query()->where('chemist_id', $chemist->id)->where('lifecycle_status', 'draft')->first();
 
         if (!$draft) {
+            $mediaImagePath = $request->file('media_image')
+                ? $this->storeUploadedMedia($request->file('media_image'), 'stages/images')
+                : null;
+            $mediaVideoPath = $request->file('media_video')
+                ? $this->storeUploadedMedia($request->file('media_video'), 'stages/videos')
+                : null;
+
             SynthesisStage::create([
                 'name' => $data['name'],
                 'brief_description' => '',
@@ -109,6 +144,8 @@ class SynthesisStageController extends Controller
                 'yield_percentage' => 0,
                 'reaction_temperature_celsius' => 20,
                 'chemist_id' => $chemist->id,
+                'media_image_url' => $mediaImagePath,
+                'media_video_url' => $mediaVideoPath,
             ]);
 
             return to_route('synthesis-stages.draft')->with('success', 'Черновик создан. Заполните параметры реакции и опубликуйте этап.');
@@ -121,7 +158,6 @@ class SynthesisStageController extends Controller
     public function publishStage(Request $request, int $synthesisStageId)
     {
         $data = $request->validate([
-            'name' => ['required', 'string', 'max:150'],
             'brief_description' => ['required', 'string', 'max:1000'],
             'yield_percentage' => ['required', 'numeric', 'min:0', 'max:100'],
             'reaction_temperature_celsius' => ['required', 'integer', 'between:-273,2000'],
@@ -133,7 +169,9 @@ class SynthesisStageController extends Controller
             ->where('lifecycle_status', 'draft')
             ->firstOrFail();
 
-        $stage->update([...$data, 'lifecycle_status' => 'published']);
+        $update = [...$data, 'lifecycle_status' => 'published'];
+
+        $stage->update($update);
 
         return to_route('synthesis-stages.grid')->with('success', 'Этап опубликован и доступен в ленте.');
     }

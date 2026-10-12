@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class SynthesisStage extends Model
@@ -25,6 +26,35 @@ class SynthesisStage extends Model
             'synthesis_stage_likes',
             'synthesis_stage_id',
             'chemist_id'
+        );
+    }
+
+    protected function mediaImageUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                // Если значение пустое, возвращаем пусто - дефолт пикча
+                if (empty($value)) {
+                    return null;
+                }
+
+                $baseUrl = config('filesystems.disks.s3.url');
+                return "{$baseUrl}/{$value}";
+            }
+        );
+    }
+
+    protected function mediaVideoUrl(): Attribute
+    {
+        return Attribute::make(
+            get: function ($value) {
+                if (empty($value)) {
+                    return null;
+                }
+
+                $baseUrl = config('filesystems.disks.s3.url');
+                return "{$baseUrl}/{$value}";
+            }
         );
     }
 }
