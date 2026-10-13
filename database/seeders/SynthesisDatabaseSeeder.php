@@ -19,7 +19,7 @@ class SynthesisDatabaseSeeder extends Seeder
 
         Chemist::factory()->count(5)->create();
 
-        $publishedOne = $this->stage($chemist, [
+        $publishedOne = $this->stage($curie, [
             'name' => 'Восстановление нитробензола',
             'brief_description' => 'Каталитическое гидрирование нитробензола до 4-аминофенола в слабокислой среде при интенсивном перемешивании.',
             'lifecycle_status' => 'published', 'yield_percentage' => 82.50, 'reaction_temperature_celsius' => 80,

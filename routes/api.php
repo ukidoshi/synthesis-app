@@ -1,8 +1,20 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\SynthesisStageApiController;
+use App\Http\Controllers\Api\ChemistAuthController;
 
-Route::get('/user', function (Request $request) {
-    return $request->user();
-})->middleware('auth:sanctum');
+// === ДОМЕН ПОЛЬЗОВАТЕЛЬ ===
+Route::post('/chemists/register', [ChemistAuthController::class, 'register']);
+Route::post('/chemists/login', [ChemistAuthController::class, 'login']);
+Route::post('/chemists/logout', [ChemistAuthController::class, 'logout']);
+
+// === ДОМЕН УСЛУГИ (Синтез) ===
+Route::get('/synthesis-stages', [SynthesisStageApiController::class, 'index']);
+Route::get('/synthesis-stages/feed/{id?}', [SynthesisStageApiController::class, 'feed']);
+Route::get('/synthesis-stages/draft', [SynthesisStageApiController::class, 'draft']);
+
+Route::post('/synthesis-stages', [SynthesisStageApiController::class, 'store']); // Ожидает form-data с file
+Route::put('/synthesis-stages/{id}/publish', [SynthesisStageApiController::class, 'publish']);
+Route::delete('/synthesis-stages/{id}', [SynthesisStageApiController::class, 'destroy']);
+Route::post('/synthesis-stages/{id}/like', [SynthesisStageApiController::class, 'toggleLike']);
