@@ -22,7 +22,22 @@ class SynthesisStageApiController extends Controller
         return $file->store($folder, ['disk' => 's3', 'visibility' => 'public']);
     }
 
-    // 1. GET список с фильтрацией (только опубликованные)
+    /**
+     * @OA\Get(
+     *     path="/synthesis-stages",
+     *     tags={"Synthesis Stages"},
+     *     summary="Список опубликованных этапов",
+     *     description="Только lifecycle_status=published. Фильтр по минимальной температуре.",
+     *     @OA\Parameter(
+     *         name="filter_temperature",
+     *         in="query",
+     *         required=false,
+     *         description="Минимальная температура реакции, °C (reaction_temperature_celsius >= значение)",
+     *         @OA\Schema(type="integer", example=80)
+     *     ),
+     *     @OA\Response(response=200, description="Список этапов", @OA\JsonContent(ref="#/components/schemas/SynthesisStageCollectionResponse"))
+     * )
+     */
     public function index(Request $request)
     {
         $filterTemperature = $request->integer('filter_temperature') ?: null;
@@ -38,7 +53,34 @@ class SynthesisStageApiController extends Controller
         return SynthesisStageResource::collection($query->get());
     }
 
-    // 2. GET лента (только опубликованные)
+    /**
+     * @OA\Get(
+     *     path="/synthesis-stages/feed/{id}",
+     *     tags={"Synthesis Stages"},
+     *     summary="Лента: один опубликованный этап",
+     *     description="Без id — первый этап. С id — этот этап. С next=true — следующий после id (циклически).",
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=false,
+     *         description="ID текущего этапа (можно опустить в URL: GET /synthesis-stages/feed)",
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\Parameter(
+     *         name="next",
+     *         in="query",
+     *         required=false,
+     *         description="Перейти к следующему этапу после id",
+     *         @OA\Schema(type="boolean", example=true)
+     *     ),
+     *     @OA\Response(response=200, description="Этап ленты", @OA\JsonContent(ref="#/components/schemas/SynthesisStageResponse")),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Нет опубликованных этапов",
+     *         @OA\JsonContent(@OA\Property(property="message", type="string", example="Нет опубликованных этапов"))
+     *     )
+     * )
+     */
     public function feed(Request $request, $id = null)
     {
         $baseQuery = SynthesisStage::query()
@@ -58,7 +100,22 @@ class SynthesisStageApiController extends Controller
         return new SynthesisStageResource($stage);
     }
 
-    // 3. GET получение черновика (ид не указывается)
+    /**
+     * @OA\Get(
+     *     path="/synthesis-stages/draft",
+     *     tags={"Synthesis Stages"},
+     *     summary="Черновик текущего пользователя",
+     *     description="Один черновик на химика (последний по id).",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Response(response=200, description="Черновик найден", @OA\JsonContent(ref="#/components/schemas/SynthesisStageResponse")),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Черновик не найден",
+     *         @OA\JsonContent(@OA\Property(property="message", type="string", example="Черновик не найден"))
+     *     ),
+     *     @OA\Response(response=401, description="JWT не передан или недействителен")
+     * )
+     */
     public function draft()
     {
         $draft = SynthesisStage::query()
@@ -72,7 +129,45 @@ class SynthesisStageApiController extends Controller
         return new SynthesisStageResource($draft);
     }
 
-    // 4. POST добавление файлов изображения и видео (как файлы)[cite: 2]
+    /**
+     * @OA\Post(
+     *     path="/synthesis-stages",
+     *     tags={"Synthesis Stages"},
+     *     summary="Создание черновика (multipart, MinIO)",
+     *     description="Загрузка медиа в S3/MinIO. Повторный черновик — 400.",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 required={"name"},
+     *                 @OA\Property(property="name", type="string", maxLength=150, example="Перекристаллизация парацетамола"),
+     *                 @OA\Property(
+     *                     property="media_image",
+     *                     type="string",
+     *                     format="binary",
+     *                     description="Изображение этапа (image/*, max 10 MB)"
+     *                 ),
+     *                 @OA\Property(
+     *                     property="media_video",
+     *                     type="string",
+     *                     format="binary",
+     *                     description="Короткое видео (mp4/webm/quicktime, max 50 MB)"
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Черновик создан", @OA\JsonContent(ref="#/components/schemas/SynthesisStageResponse")),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Черновик уже существует",
+     *         @OA\JsonContent(@OA\Property(property="message", type="string", example="Черновик уже существует"))
+     *     ),
+     *     @OA\Response(response=401, description="Не авторизован"),
+     *     @OA\Response(response=422, description="Ошибка валидации", @OA\JsonContent(ref="#/components/schemas/ValidationError"))
+     * )
+     */
     public function store(Request $request)
     {
         // Системные поля передавать с клиента запрещено[cite: 2]
@@ -113,7 +208,38 @@ class SynthesisStageApiController extends Controller
         return new SynthesisStageResource($stage);
     }
 
-    // 5. PUT публикации (смена статуса)
+    /**
+     * @OA\Put(
+     *     path="/synthesis-stages/{id}/publish",
+     *     tags={"Synthesis Stages"},
+     *     summary="Публикация черновика",
+     *     description="Меняет status на published. Только свой черновик.",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID этапа-черновика",
+     *         @OA\Schema(type="integer", example=5)
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(
+     *                 required={"brief_description","yield_percentage","reaction_temperature_celsius"},
+     *                 @OA\Property(property="brief_description", type="string", maxLength=1000, example="Очистка сырца из водного раствора."),
+     *                 @OA\Property(property="yield_percentage", type="number", format="float", minimum=0, maximum=100, example=76.4),
+     *                 @OA\Property(property="reaction_temperature_celsius", type="integer", minimum=-273, maximum=2000, example=25)
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Этап опубликован", @OA\JsonContent(ref="#/components/schemas/SynthesisStageResponse")),
+     *     @OA\Response(response=401, description="Не авторизован"),
+     *     @OA\Response(response=404, description="Черновик не найден или не принадлежит пользователю"),
+     *     @OA\Response(response=422, description="Ошибка валидации", @OA\JsonContent(ref="#/components/schemas/ValidationError"))
+     * )
+     */
     public function publish(Request $request, int $id)
     {
         // Разрешаем обновлять только бизнес-поля, статусы и ИД передавать нельзя[cite: 2]
@@ -134,7 +260,32 @@ class SynthesisStageApiController extends Controller
         return new SynthesisStageResource($stage);
     }
 
-    // 6. DELETE удаление (soft delete, только услуги этого пользователя)[cite: 2]
+    /**
+     * @OA\Delete(
+     *     path="/synthesis-stages/{id}",
+     *     tags={"Synthesis Stages"},
+     *     summary="Логическое удаление этапа",
+     *     description="lifecycle_status → deleted. Только свои этапы.",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer", example=3)
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Удалено",
+     *         @OA\JsonContent(@OA\Property(property="message", type="string", example="Этап логически удалён"))
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Нет прав или этап не найден",
+     *         @OA\JsonContent(@OA\Property(property="message", type="string", example="Невозможно удалить этот этап (не найден или нет прав)"))
+     *     ),
+     *     @OA\Response(response=401, description="Не авторизован")
+     * )
+     */
     public function destroy(int $id)
     {
         $updated = DB::update(
@@ -149,7 +300,39 @@ class SynthesisStageApiController extends Controller
         return response()->json(['message' => 'Этап логически удалён']);
     }
 
-    // 7. POST like (0 отменяет, 1 ставит)[cite: 2]
+    /**
+     * @OA\Post(
+     *     path="/synthesis-stages/{id}/like",
+     *     tags={"Synthesis Stages"},
+     *     summary="Поставить или снять лайк",
+     *     description="action=1 — лайк, action=0 — отмена.",
+     *     security={{"bearerAuth":{}}},
+     *     @OA\Parameter(
+     *         name="id",
+     *         in="path",
+     *         required=true,
+     *         description="ID опубликованного этапа",
+     *         @OA\Schema(type="integer", example=1)
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="application/json",
+     *             @OA\Schema(
+     *                 required={"action"},
+     *                 @OA\Property(property="action", type="integer", enum={0,1}, example=1, description="1 — лайк, 0 — снять лайк")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Статус лайка обновлён",
+     *         @OA\JsonContent(@OA\Property(property="message", type="string", example="Статус лайка обновлен"))
+     *     ),
+     *     @OA\Response(response=401, description="Не авторизован"),
+     *     @OA\Response(response=422, description="Ошибка валидации", @OA\JsonContent(ref="#/components/schemas/ValidationError"))
+     * )
+     */
     public function toggleLike(Request $request, int $id)
     {
         $action = $request->integer('action');
