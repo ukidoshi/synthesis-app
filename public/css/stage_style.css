@@ -76,6 +76,12 @@ details[open] .feed-expand svg { transform:rotate(180deg); }
 .form-file { padding:5px 9px; cursor:pointer; }
 .form-file::file-selector-button { margin-right:8px; padding:4px 8px; border:1px solid var(--line); border-radius:5px; background:var(--canvas-soft); color:var(--muted-strong); font-size:11px; font-weight:600; cursor:pointer; }
 .form-file::file-selector-button:hover { background:var(--line-soft); }
+.draft-media { display:flex; flex-direction:column; gap:14px; }
+.draft-media-frame { position:relative; display:block; aspect-ratio:16/10; overflow:hidden; border:1px solid var(--line); border-radius:10px; background:var(--canvas-soft); }
+.draft-media-content { display:block; width:100%; height:100%; object-fit:cover; }
+.draft-media-pick { cursor:pointer; transition:border-color 150ms ease,box-shadow 150ms ease; }
+.draft-media-pick:hover { border-color:var(--navy); box-shadow:0 0 0 3px rgba(10,59,92,.12); }
+.draft-media-badge { position:absolute; right:8px; bottom:8px; padding:5px 10px; border-radius:999px; background:rgba(17,28,36,.72); color:#fff; font-size:11px; font-weight:600; line-height:14px; }
 
 /* Stage grid */
 .header-section { height:52px; display:flex; align-items:center; padding:0 16px; border-bottom:1px solid var(--line-soft); background:var(--surface); }

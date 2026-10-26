@@ -2,13 +2,13 @@
 
 namespace App\Services;
 
+use Illuminate\Support\Facades\Auth;
+
 class AuthSingleton
 {
-    private static ?int $currentChemistId = 1;
-
-    public static function getId(): int
+    public static function getId(): ?int
     {
-        // Функция-singleton: возвращаем зафиксированную константу создателя
-        return self::$currentChemistId;
+        // Текущий химик из JWT (guard api); null — гость без токена
+        return Auth::guard('api')->id();
     }
 }

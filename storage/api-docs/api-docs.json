@@ -1,0 +1,846 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "API Этапов синтеза",
+        "description": "REST API учёта этапов химического синтеза. Публичное чтение без токена; создание и изменение — JWT Bearer.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/api",
+            "description": "API prefix"
+        }
+    ],
+    "paths": {
+        "/chemists/register": {
+            "post": {
+                "tags": [
+                    "Chemists"
+                ],
+                "summary": "Регистрация химика",
+                "description": "Создание учётной записи. Авторизация не требуется.",
+                "operationId": "ad335f1e9d545d1ee4eaf3e207a0466f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "full_name",
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "full_name": {
+                                        "type": "string",
+                                        "example": "Начын Сарыглар",
+                                        "maxLength": 255
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "saryglar@bmstu.ru",
+                                        "maxLength": 255
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret123",
+                                        "minLength": 6
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Пользователь создан",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "data": {
+                                            "$ref": "#/components/schemas/Chemist"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации (email занят и т.д.)",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/chemists/login": {
+            "post": {
+                "tags": [
+                    "Chemists"
+                ],
+                "summary": "Вход (JWT)",
+                "description": "Выдаёт access_token для заголовка Authorization. Авторизация не требуется.",
+                "operationId": "607b9844b163abaaae68b05ce26b62a4",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "saryglar@bmstu.ru"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Успешная аутентификация",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LoginResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Неверный email или пароль",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Неверный email или пароль"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Ошибка валидации",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/chemists/logout": {
+            "post": {
+                "tags": [
+                    "Chemists"
+                ],
+                "summary": "Выход (blacklist JWT)",
+                "description": "Инвалидирует текущий токен (blacklist).",
+                "operationId": "eff08cad936568bfc2af21592ebba72f",
+                "responses": {
+                    "200": {
+                        "description": "Токен отозван",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MessageResponse"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/synthesis-stages": {
+            "get": {
+                "tags": [
+                    "Synthesis Stages"
+                ],
+                "summary": "Список опубликованных этапов",
+                "description": "Только lifecycle_status=published. Фильтр по минимальной температуре.",
+                "operationId": "6f39f84e5afe32e8ab9b24c216838c1d",
+                "parameters": [
+                    {
+                        "name": "filter_temperature",
+                        "in": "query",
+                        "description": "Минимальная температура реакции, °C (reaction_temperature_celsius >= значение)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 80
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список этапов",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SynthesisStageCollectionResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Synthesis Stages"
+                ],
+                "summary": "Создание черновика (multipart, MinIO)",
+                "description": "Загрузка медиа в S3/MinIO. Повторный черновик — 400.",
+                "operationId": "d6d0073ca54d462ca7b157c09c0c19b7",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "example": "Перекристаллизация парацетамола",
+                                        "maxLength": 150
+                                    },
+                                    "media_image": {
+                                        "description": "Изображение этапа (image/*, max 10 MB)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "media_video": {
+                                        "description": "Короткое видео (mp4/webm/quicktime, max 50 MB)",
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Черновик создан",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SynthesisStageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Черновик уже существует",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Черновик уже существует"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован"
+                    },
+                    "422": {
+                        "description": "Ошибка валидации",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/synthesis-stages/feed/{id}": {
+            "get": {
+                "tags": [
+                    "Synthesis Stages"
+                ],
+                "summary": "Лента: один опубликованный этап",
+                "description": "Без id — первый этап. С id — этот этап. С next=true — следующий после id (циклически). JWT необязателен: с ним is_liked показывает лайк текущего химика.",
+                "operationId": "5e219d0ec17dd241d50393b5e05d08ef",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID текущего этапа (можно опустить в URL: GET /synthesis-stages/feed)",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    },
+                    {
+                        "name": "next",
+                        "in": "query",
+                        "description": "Перейти к следующему этапу после id",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "example": true
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Этап ленты",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SynthesisStageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Нет опубликованных этапов",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Нет опубликованных этапов"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {},
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/synthesis-stages/draft": {
+            "get": {
+                "tags": [
+                    "Synthesis Stages"
+                ],
+                "summary": "Черновик текущего пользователя",
+                "description": "Один черновик на химика (последний по id).",
+                "operationId": "28f9b180bd95b2939ed20cafe09aabee",
+                "responses": {
+                    "200": {
+                        "description": "Черновик найден",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SynthesisStageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Черновик не найден",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Черновик не найден"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "JWT не передан или недействителен"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/synthesis-stages/{id}/publish": {
+            "put": {
+                "tags": [
+                    "Synthesis Stages"
+                ],
+                "summary": "Публикация черновика",
+                "description": "Меняет status на published. Только свой черновик.",
+                "operationId": "97c0ce376e131a5b194df4cc013032ae",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID этапа-черновика",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 5
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "brief_description",
+                                    "yield_percentage",
+                                    "reaction_temperature_celsius"
+                                ],
+                                "properties": {
+                                    "brief_description": {
+                                        "type": "string",
+                                        "example": "Очистка сырца из водного раствора.",
+                                        "maxLength": 1000
+                                    },
+                                    "yield_percentage": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 76.4,
+                                        "maximum": 100,
+                                        "minimum": 0
+                                    },
+                                    "reaction_temperature_celsius": {
+                                        "type": "integer",
+                                        "example": 25,
+                                        "maximum": 2000,
+                                        "minimum": -273
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Этап опубликован",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SynthesisStageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован"
+                    },
+                    "404": {
+                        "description": "Черновик не найден или не принадлежит пользователю"
+                    },
+                    "422": {
+                        "description": "Ошибка валидации",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/synthesis-stages/{id}": {
+            "delete": {
+                "tags": [
+                    "Synthesis Stages"
+                ],
+                "summary": "Логическое удаление этапа",
+                "description": "lifecycle_status → deleted. Только свои этапы.",
+                "operationId": "70846f11c298c114ce7e18757cd4fa20",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 3
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Удалено",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Этап логически удалён"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Нет прав или этап не найден",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Невозможно удалить этот этап (не найден или нет прав)"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/synthesis-stages/{id}/like": {
+            "post": {
+                "tags": [
+                    "Synthesis Stages"
+                ],
+                "summary": "Поставить или снять лайк",
+                "description": "action=1 — лайк, action=0 — отмена.",
+                "operationId": "4c665f6f484bda38ad0779c606f291cb",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "description": "ID опубликованного этапа",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "example": 1
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "action"
+                                ],
+                                "properties": {
+                                    "action": {
+                                        "description": "1 — лайк, 0 — снять лайк",
+                                        "type": "integer",
+                                        "example": 1,
+                                        "enum": [
+                                            0,
+                                            1
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Статус лайка обновлён",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Статус лайка обновлен"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Не авторизован"
+                    },
+                    "422": {
+                        "description": "Ошибка валидации",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Chemist": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "full_name": {
+                        "type": "string",
+                        "example": "Начын Сарыглар"
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "example": "saryglar@bmstu.ru"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "LoginResponse": {
+                "properties": {
+                    "access_token": {
+                        "type": "string",
+                        "example": "eyJ0eXAiOiJKV1QiLCJhbGc..."
+                    },
+                    "token_type": {
+                        "type": "string",
+                        "example": "bearer"
+                    }
+                },
+                "type": "object"
+            },
+            "SynthesisStage": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "example": 3
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Ацетилирование 4-аминофенола"
+                    },
+                    "brief_description": {
+                        "type": "string",
+                        "example": "Краткое описание реакции"
+                    },
+                    "status": {
+                        "type": "string",
+                        "example": "published",
+                        "enum": [
+                            "draft",
+                            "published",
+                            "deleted"
+                        ]
+                    },
+                    "image_url": {
+                        "type": "string",
+                        "example": "http://localhost:9000/bucket/stages/images/abc.jpg",
+                        "nullable": true
+                    },
+                    "video_url": {
+                        "type": "string",
+                        "example": "http://localhost:9000/bucket/stages/videos/abc.mp4",
+                        "nullable": true
+                    },
+                    "yield_percentage": {
+                        "type": "number",
+                        "format": "float",
+                        "example": 91
+                    },
+                    "temperature_celsius": {
+                        "type": "integer",
+                        "example": 100
+                    },
+                    "likes_count": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "is_owner": {
+                        "description": "1 — этап текущего пользователя",
+                        "type": "integer",
+                        "example": 0,
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    },
+                    "is_liked": {
+                        "description": "Только в ленте: 1 — текущий химик (из JWT) лайкнул этап, у гостя 0",
+                        "type": "integer",
+                        "example": 0,
+                        "enum": [
+                            0,
+                            1
+                        ]
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "type": "object"
+            },
+            "SynthesisStageResponse": {
+                "properties": {
+                    "data": {
+                        "$ref": "#/components/schemas/SynthesisStage"
+                    }
+                },
+                "type": "object"
+            },
+            "SynthesisStageCollectionResponse": {
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SynthesisStage"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "MessageResponse": {
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "Операция выполнена"
+                    }
+                },
+                "type": "object"
+            },
+            "ValidationError": {
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "The given data was invalid."
+                    },
+                    "errors": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                },
+                "type": "object"
+            }
+        },
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "description": "JWT из POST /chemists/login. Заголовок: Authorization: Bearer {access_token}",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Chemists",
+            "description": "Регистрация, вход и выход"
+        },
+        {
+            "name": "Synthesis Stages",
+            "description": "Этапы синтеза, лента, черновики, лайки"
+        }
+    ]
+}

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Chemist;
 use App\Models\User;
 
 return [
@@ -44,7 +45,7 @@ return [
         ],
         'api' => [
             'driver' => 'jwt',
-            'provider' => 'users',
+            'provider' => 'chemists',
         ],
     ],
 
@@ -69,6 +70,11 @@ return [
         'users' => [
             'driver' => 'eloquent',
             'model' => env('AUTH_MODEL', User::class),
+        ],
+
+        'chemists' => [
+            'driver' => 'eloquent',
+            'model' => Chemist::class,
         ],
 
         // 'users' => [

@@ -6,22 +6,33 @@
             <div>
                 <p class="eyebrow">Новый этап</p>
                 <h1 id="draft-empty-title">Создайте черновик</h1>
-                <p class="draft-empty-copy">Укажите название и выберите медиа.</p>
+                <p class="draft-empty-copy">Выберите фото и видео, укажите название.</p>
             </div>
             <form method="POST" action="/synthesis-stages/draft" enctype="multipart/form-data">
                 @csrf
                 <div class="form-stack draft-create-form">
+                    {{-- Фото и видео по умолчанию; клик по превью открывает проводник (без JS, через label) --}}
+                    <div class="draft-media">
+                        <div class="form-group">
+                            <span class="form-label">Фото этапа</span>
+                            <label for="draft-image" class="draft-media-frame draft-media-pick">
+                                <img src="{{ $defaultImage }}" alt="Фото этапа по умолчанию" class="draft-media-content">
+                                <span class="draft-media-badge">Выбрать фото</span>
+                            </label>
+                            <input id="draft-image" type="file" name="media_image" class="form-input form-file" accept="image/*">
+                        </div>
+                        <div class="form-group">
+                            <span class="form-label">Короткое видео</span>
+                            <label for="draft-video" class="draft-media-frame draft-media-pick">
+                                <video src="{{ $defaultVideo }}" poster="{{ $defaultImage }}" class="draft-media-content" autoplay loop muted playsinline></video>
+                                <span class="draft-media-badge">Выбрать видео</span>
+                            </label>
+                            <input id="draft-video" type="file" name="media_video" class="form-input form-file" accept="video/mp4,video/webm,video/quicktime">
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label for="new-stage-name" class="form-label">Название этапа реакции</label>
                         <input id="new-stage-name" type="text" name="name" class="form-input" value="{{ old('name') }}" placeholder="Например, ацетилирование" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="draft-image" class="form-label">Фото этапа</label>
-                        <input id="draft-image" type="file" name="media_image" class="form-input form-file" accept="image/*">
-                    </div>
-                    <div class="form-group">
-                        <label for="draft-video" class="form-label">Короткое видео</label>
-                        <input id="draft-video" type="file" name="media_video" class="form-input form-file" accept="video/mp4,video/webm,video/quicktime">
                     </div>
                     <button type="submit" class="button button-primary">Далее</button>
                 </div>
@@ -31,30 +42,27 @@
         <section class="draft-empty" aria-labelledby="draft-edit-title">
             <div>
                 <p class="eyebrow">Черновик</p>
-                <h1 id="draft-edit-title">Редактирование синтеза</h1>
+                <h1 id="draft-edit-title">{{ $draftStage->name }}</h1>
                 <p class="draft-empty-copy">Заполните параметры реакции и опубликуйте этап.</p>
             </div>
-            <form method="POST" action="/synthesis-stages/{{ $draftStage->id }}/publish" enctype="multipart/form-data">
+            <form method="POST" action="/synthesis-stages/{{ $draftStage->id }}/publish">
                 @csrf
                 <div class="form-stack draft-create-form">
-{{--                    <div class="form-group">--}}
-{{--                        <label for="stage-name" class="form-label">Название этапа реакции</label>--}}
-{{--                        <input id="stage-name" type="text" name="name" class="form-input" value="{{ old('name', $draftStage->name) }}" required>--}}
-{{--                    </div>--}}
-{{--                    <div class="form-group">--}}
-{{--                        <label for="edit-stage-image" class="form-label">Фото этапа</label>--}}
-{{--                        @if(filled($draftStage->getRawOriginal('media_image_url')))--}}
-{{--                            <p class="form-hint">Текущий файл: {{ basename($draftStage->getRawOriginal('media_image_url')) }}</p>--}}
-{{--                        @endif--}}
-{{--                        <input id="edit-stage-image" type="file" name="media_image" class="form-input form-file" accept="image/*">--}}
-{{--                    </div>--}}
-{{--                    <div class="form-group">--}}
-{{--                        <label for="edit-stage-video" class="form-label">Короткое видео</label>--}}
-{{--                        @if(filled($draftStage->getRawOriginal('media_video_url')))--}}
-{{--                            <p class="form-hint">Текущий файл: {{ basename($draftStage->getRawOriginal('media_video_url')) }}</p>--}}
-{{--                        @endif--}}
-{{--                        <input id="edit-stage-video" type="file" name="media_video" class="form-input form-file" accept="video/mp4,video/webm,video/quicktime">--}}
-{{--                    </div>--}}
+                    {{-- Медиа после «Далее» только для просмотра: загруженные или по умолчанию --}}
+                    <div class="draft-media">
+                        <div class="form-group">
+                            <span class="form-label">Фото этапа</span>
+                            <div class="draft-media-frame">
+                                <img src="{{ $draftStage->resolved_image }}" alt="Фото этапа {{ $draftStage->name }}" class="draft-media-content">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <span class="form-label">Короткое видео</span>
+                            <div class="draft-media-frame">
+                                <video src="{{ $draftStage->resolved_video }}" poster="{{ $draftStage->resolved_image }}" class="draft-media-content" autoplay loop muted playsinline></video>
+                            </div>
+                        </div>
+                    </div>
                     <div class="form-group">
                         <label for="temperature" class="form-label">Температура</label>
                         <input id="temperature" type="number" name="reaction_temperature_celsius" class="form-input" value="{{ old('reaction_temperature_celsius', $draftStage->reaction_temperature_celsius) }}" required>

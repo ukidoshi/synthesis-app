@@ -24,6 +24,8 @@ class SynthesisStageResource extends JsonResource
             'temperature_celsius' => (int) $this->reaction_temperature_celsius,
             'likes_count' => $this->liking_chemists_count ?? 0,
             'is_owner' => $isOwner,
+            // Только в ленте: 1 — текущий химик лайкнул этап
+            'is_liked' => $this->whenHas('is_liked', fn($isLiked) => $isLiked ? 1 : 0),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
         ];

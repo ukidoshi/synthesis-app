@@ -61,6 +61,7 @@ use Illuminate\Support\Facades\Hash;
  *     @OA\Property(property="temperature_celsius", type="integer", example=100),
  *     @OA\Property(property="likes_count", type="integer", example=2),
  *     @OA\Property(property="is_owner", type="integer", enum={0,1}, description="1 — этап текущего пользователя", example=0),
+ *     @OA\Property(property="is_liked", type="integer", enum={0,1}, description="Только в ленте: 1 — текущий химик (из JWT) лайкнул этап, у гостя 0", example=0),
  *     @OA\Property(property="created_at", type="string", format="date-time"),
  *     @OA\Property(property="updated_at", type="string", format="date-time", nullable=true)
  * )

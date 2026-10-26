@@ -58,7 +58,8 @@ class SynthesisStageApiController extends Controller
      *     path="/synthesis-stages/feed/{id}",
      *     tags={"Synthesis Stages"},
      *     summary="Лента: один опубликованный этап",
-     *     description="Без id — первый этап. С id — этот этап. С next=true — следующий после id (циклически).",
+     *     description="Без id — первый этап. С id — этот этап. С next=true — следующий после id (циклически). JWT необязателен: с ним is_liked показывает лайк текущего химика.",
+     *     security={{}, {"bearerAuth":{}}},
      *     @OA\Parameter(
      *         name="id",
      *         in="path",
@@ -83,9 +84,13 @@ class SynthesisStageApiController extends Controller
      */
     public function feed(Request $request, $id = null)
     {
+        // Признак 0/1: лайкнул ли этап текущий химик из JWT (у гостя всегда 0)
         $baseQuery = SynthesisStage::query()
             ->where('lifecycle_status', 'published')
-            ->withCount('likingChemists');
+            ->withCount('likingChemists')
+            ->withExists(['likingChemists as is_liked' => fn($q) =>
+                $q->where('synthesis_stage_likes.chemist_id', AuthSingleton::getId())
+            ]);
 
         if ($id !== null && $request->boolean('next')) {
             $stage = (clone $baseQuery)->where('id', '>', $id)->orderBy('id')->first() ?? (clone $baseQuery)->orderBy('id')->first();

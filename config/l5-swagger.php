@@ -134,7 +134,12 @@ return [
              *
              * @see \OpenApi\scan
              */
-            'analyser' => null,
+            // l5-swagger 11 по умолчанию читает только PHP-атрибуты #[OA\...];
+            // добавляем DocBlockAnnotationFactory, чтобы работали аннотации /** @OA\... */
+            'analyser' => new \OpenApi\Analysers\ReflectionAnalyser([
+                new \OpenApi\Analysers\AttributeAnnotationFactory(),
+                new \OpenApi\Analysers\DocBlockAnnotationFactory(),
+            ]),
 
             /**
              * analysis: defaults to a new \OpenApi\Analysis .

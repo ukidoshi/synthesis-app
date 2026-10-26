@@ -116,7 +116,14 @@ class SynthesisStageController extends Controller
             ->latest('id')
             ->first();
 
-        return view('synthesis_stage_draft', compact('draftStage'));
+        // Медиа черновика из Silo(MinIO) или дефолтные файлы с SSR-сервера
+        if ($draftStage) {
+            $this->withResolvedVideo($this->withResolvedImage($draftStage));
+        }
+        $defaultImage = asset(self::DEFAULT_IMAGE);
+        $defaultVideo = asset(self::DEFAULT_VIDEO);
+
+        return view('synthesis_stage_draft', compact('draftStage', 'defaultImage', 'defaultVideo'));
     }
 
     public function storeStageDraft(Request $request)
